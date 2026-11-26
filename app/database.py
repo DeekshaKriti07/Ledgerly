@@ -4,10 +4,26 @@ from pathlib import Path
 import os
 
 ROOT = Path(__file__).resolve().parents[1]
-DB_URL = os.getenv("DATABASE_URL", f"sqlite:///{ROOT / 'data' / 'ledgerly.db'}")
+
+DEFAULT_DB = "sqlite:////tmp/ledgerly.db"
+DB_URL = os.getenv("DATABASE_URL", DEFAULT_DB)
+
+if DB_URL.startswith("postgres://"):
+    DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
+
 connect_args = {"check_same_thread": False} if DB_URL.startswith("sqlite") else {}
-engine = create_engine(DB_URL, connect_args=connect_args, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+
+engine = create_engine(
+    DB_URL,
+    connect_args=connect_args,
+    pool_pre_ping=True
+)
+
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    expire_on_commit=False
+)
 
 class Base(DeclarativeBase):
     pass
