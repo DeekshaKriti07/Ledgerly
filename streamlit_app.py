@@ -44,7 +44,54 @@ input,textarea,[data-baseweb="select"]>div{border-radius:9px!important}
 .panel{background:#fffaf2;border:1.5px solid #242421;border-radius:15px;padding:20px;box-shadow:3px 3px 0 #242421}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:700px){h1{font-size:1.8rem!important}.hero h2{font-size:1.45rem}}
-</style>""",unsafe_allow_html=True)
+
+.intro-splash{
+ position:fixed;inset:0;width:100vw;height:100vh;
+ z-index:999999;background:#f6f0e9;
+ display:flex;align-items:center;justify-content:center;
+ animation:splashExit .8s ease 3.8s forwards;
+}
+.intro-content{text-align:center;width:min(420px,85vw)}
+.intro-mark{
+ width:76px;height:76px;margin:0 auto 22px;
+ display:grid;place-items:center;background:#f4b3ca;
+ border:2px solid #20201e;border-radius:22px;
+ box-shadow:6px 6px 0 #20201e;font-size:43px;
+ animation:markEnter .8s cubic-bezier(.2,.8,.2,1) both;
+}
+.intro-word{
+ color:#20201e;font-size:42px;font-weight:900;
+ letter-spacing:5px;animation:wordEnter .8s .25s both;
+}
+.intro-tag{
+ color:#77736e;font:700 10px monospace;
+ letter-spacing:3px;margin-top:12px;
+ animation:wordEnter .8s .45s both;
+}
+.intro-track{
+ height:4px;background:#e2d9d0;border-radius:8px;
+ margin:38px auto 17px;overflow:hidden;
+ animation:wordEnter .5s .6s both;
+}
+.intro-progress{
+ height:100%;width:0;background:#20201e;
+ animation:progressRun 2.7s .8s ease forwards;
+}
+.intro-caption{
+ color:#77736e;font:600 10px monospace;
+ letter-spacing:2px;animation:wordEnter .6s .7s both;
+}
+@keyframes markEnter{
+ from{opacity:0;transform:translateY(25px) scale(.75)}
+ to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes wordEnter{
+ from{opacity:0;transform:translateY(12px)}
+ to{opacity:1;transform:translateY(0)}
+}
+@keyframes progressRun{to{width:100%}}
+@keyframes splashExit{to{opacity:0;visibility:hidden;pointer-events:none}}
+\n</style>""",unsafe_allow_html=True)
 
 def money(v): return f"₹{float(v):,.2f}"
 def login_screen(db):
@@ -52,8 +99,19 @@ def login_screen(db):
     left,right=st.columns([1.1,1],gap="large")
     with left:
         st.markdown("<div class='eyebrow'>FINANCE INTELLIGENCE PLATFORM</div><h1 style='font-size:3.4rem!important;margin-top:20px'>Clarity in every<br>number.</h1><p style='font-size:1.1rem;color:#68625c'>A calmer way to close the books, understand the business and stay in control.</p>",unsafe_allow_html=True)
-        st.video("assets/ledgerly_intro.mp4",autoplay=True,muted=True)
-        st.caption("LEDGERLY · FINANCE OPERATIONS")
+        if not st.session_state.get("ledgerly_intro_seen", False):
+            st.session_state["ledgerly_intro_seen"] = True
+            st.markdown("""
+            <div class="intro-splash">
+                <div class="intro-content">
+                    <div class="intro-mark">◈</div>
+                    <div class="intro-word">LEDGERLY</div>
+                    <div class="intro-tag">FINANCE INTELLIGENCE PLATFORM</div>
+                    <div class="intro-track"><div class="intro-progress"></div></div>
+                    <div class="intro-caption">CLARITY IN EVERY NUMBER</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
     with right:
         st.markdown("<div class='panel'>",unsafe_allow_html=True)
         st.subheader("Welcome back")
