@@ -305,7 +305,212 @@ input,textarea,[data-baseweb="select"]>div{border-radius:9px!important}
 
 </style>""",unsafe_allow_html=True)
 
+st.markdown("""<style>\n
+/* LEDGERLY BRAND EXPERIENCE */
+.stApp {
+    background:
+      radial-gradient(ellipse at 10% 10%,rgba(244,179,202,.22),transparent 32%),
+      radial-gradient(ellipse at 90% 80%,rgba(244,216,111,.16),transparent 32%),
+      #f6f0e9 !important;
+}
+.stApp::before {
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    opacity:.19;
+    background-image:
+      linear-gradient(rgba(52,42,35,.08) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(52,42,35,.08) 1px,transparent 1px);
+    background-size:34px 34px;
+}
+.block-container {
+    max-width:1450px !important;
+    padding-top:2.1rem !important;
+    padding-bottom:2rem !important;
+    position:relative;
+    z-index:1;
+}
+.ledger-login { min-height:80vh; }
+.login-eyebrow {
+    color:#776d64 !important;
+    font:700 10px 'DM Mono',monospace;
+    letter-spacing:2.3px;
+    margin-top:22px;
+}
+.login-headline {
+    color:#25231f !important;
+    font-size:clamp(43px,5vw,67px);
+    line-height:1.02;
+    letter-spacing:-3.5px;
+    font-weight:900;
+    margin-top:17px;
+}
+.login-headline span { color:#d989a9 !important; }
+.login-description {
+    max-width:470px;
+    color:#625b54 !important;
+    font-size:16px;
+    line-height:1.75;
+    margin-top:17px;
+}
+.login-benefits {
+    display:flex;
+    gap:0;
+    margin:23px 0 8px;
+}
+.login-benefits > div {
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:8px 15px 8px 0;
+    margin-right:15px;
+    border-right:1px solid #d7c9bd;
+}
+.login-benefits > div:last-child { border:0; }
+.login-benefits b {
+    display:grid;
+    place-items:center;
+    width:35px;
+    height:35px;
+    background:#f4b3ca;
+    color:#25231f !important;
+    border:1px solid #25231f;
+    border-radius:10px;
+    font-size:11px;
+}
+.login-benefits span {
+    color:#49433d !important;
+    font-size:11px;
+    font-weight:700;
+    line-height:1.4;
+}
+.login-brand img { object-fit:contain; }
+[data-testid="stImage"] img {
+    animation:illustrationFloat 5s ease-in-out infinite;
+}
+.login-footer {
+    font:700 10px 'DM Mono',monospace;
+    color:#746a61 !important;
+    letter-spacing:2px;
+    margin-top:2px;
+}
+.login-footer span { color:#df88a9 !important; }
+.auth-topline {
+    color:#80746b !important;
+    font:700 10px 'DM Mono',monospace;
+    letter-spacing:2px;
+    text-align:center;
+    margin:30px 0 14px;
+}
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background:rgba(255,250,242,.94) !important;
+    border:1.5px solid #28251f !important;
+    border-radius:20px !important;
+    padding:27px !important;
+    box-shadow:6px 6px 0 #28251f !important;
+}
+.auth-heading {
+    font-size:34px;
+    line-height:1.2;
+    letter-spacing:-1.7px;
+    font-weight:900;
+    color:#25231f !important;
+    margin:5px 0 9px;
+}
+.auth-heading span { color:#df88a9 !important; }
+.auth-description {
+    font-size:13px;
+    color:#746a61 !important;
+    margin-bottom:25px;
+}
+[data-testid="stTextInput"] label,
+[data-testid="stTextInput"] label p {
+    color:#38332e !important;
+    font-size:13px !important;
+    font-weight:800 !important;
+}
+[data-testid="stTextInput"] input {
+    background:#fffdf9 !important;
+    color:#25231f !important;
+    border:1.5px solid #cbbeb2 !important;
+    border-radius:10px !important;
+    min-height:48px;
+}
+[data-testid="stTextInput"] input::placeholder {
+    color:#8e857d !important;
+    opacity:1 !important;
+}
+[data-testid="stFormSubmitButton"] button {
+    background:#25231f !important;
+    color:#fffaf2 !important;
+    border:1.5px solid #25231f !important;
+    border-radius:10px !important;
+    min-height:49px;
+    font-weight:800 !important;
+    box-shadow:3px 3px 0 #e8a6bd !important;
+    transition:transform .2s,background .2s !important;
+}
+[data-testid="stFormSubmitButton"] button:hover {
+    background:#f4b3ca !important;
+    color:#25231f !important;
+    transform:translateY(-2px);
+}
+.setup-note {
+    display:flex;
+    align-items:center;
+    gap:15px;
+    background:#25231f;
+    border:1px solid #25231f;
+    border-radius:14px;
+    padding:17px;
+    margin-top:22px;
+}
+.setup-icon {
+    display:grid;
+    place-items:center;
+    min-width:40px;
+    height:40px;
+    background:#f4d86f;
+    border-radius:12px;
+    color:#25231f !important;
+    font-size:23px;
+}
+.setup-title {
+    color:#f4d86f !important;
+    font-size:13px;
+    font-weight:800;
+}
+.setup-copy {
+    color:#fffaf2 !important;
+    font-size:11px;
+    line-height:1.6;
+    margin-top:4px;
+}
+.auth-bottom {
+    text-align:center;
+    color:#82766c !important;
+    font:600 9px 'DM Mono',monospace;
+    letter-spacing:1.5px;
+    margin-top:22px;
+}
+@keyframes illustrationFloat {
+    0%,100% { transform:translateY(0); }
+    50% { transform:translateY(-7px); }
+}
+@media(max-width:850px) {
+    .block-container { padding:1rem !important; }
+    .login-headline { font-size:45px; }
+    .auth-topline { margin-top:10px; }
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        padding:18px !important;
+    }
+}
+\n</style>""", unsafe_allow_html=True)
+
 def money(v): return f"₹{float(v):,.2f}"
+
 
 def login_screen(db):
     if not st.session_state.get("ledgerly_intro_seen", False):
@@ -313,7 +518,7 @@ def login_screen(db):
         st.markdown("""
         <div class="intro-splash">
             <div class="intro-content">
-                <div class="intro-mark">◈</div>
+                <div class="intro-mark">L</div>
                 <div class="intro-word">LEDGERLY</div>
                 <div class="intro-tag">FINANCE INTELLIGENCE PLATFORM</div>
                 <div class="intro-track"><div class="intro-progress"></div></div>
@@ -322,42 +527,63 @@ def login_screen(db):
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<div class='login-shell'>", unsafe_allow_html=True)
+    st.markdown('<div class="ledger-login">', unsafe_allow_html=True)
+
     left, right = st.columns([1.15, 0.85], gap="large")
 
     with left:
+        st.image("assets/ledgerly_logo.png", width=245)
+
         st.markdown("""
-        <div class="login-brand">
-            <div class="login-eyebrow">FINANCE INTELLIGENCE PLATFORM</div>
-            <div class="login-headline">Clarity in<br>every number<span>.</span></div>
-            <div class="login-description">
-                A calmer way to close the books, understand the business
-                and stay in control.
-            </div>
-            <div class="login-feature">
-                <div class="feature-symbol">◈</div>
-                <div>
-                    <div class="feature-title">One connected finance workspace</div>
-                    <div class="feature-copy">Accounting · Reporting · Financial control</div>
-                </div>
-            </div>
-            <div class="login-footer">LEDGERLY <span>/</span> FINANCE OPERATIONS</div>
+        <div class="login-eyebrow">YOUR FINANCE INTELLIGENCE PLATFORM</div>
+        <div class="login-headline">
+            Clarity in<br>every <span>number.</span>
+        </div>
+        <div class="login-description">
+            A smarter, calmer way to manage your finances,
+            understand your business and grow with confidence.
+        </div>
+        <div class="login-benefits">
+            <div><b>01</b><span>Insightful<br>reports</span></div>
+            <div><b>02</b><span>Automated<br>workflows</span></div>
+            <div><b>03</b><span>Financial<br>control</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.image("assets/ledgerly_finance_illustration.png", width=570)
+
+        st.markdown("""
+        <div class="login-footer">
+            LEDGERLY <span>✳</span> PLAN · TRACK · GROW
         </div>
         """, unsafe_allow_html=True)
 
     with right:
+        st.markdown('<div class="auth-topline">YOUR WORKSPACE AWAITS</div>',
+                    unsafe_allow_html=True)
+
         with st.container(border=True):
             st.markdown("""
-            <div class="auth-heading">Welcome back.</div>
+            <div class="auth-heading">Welcome back<span>.</span></div>
             <div class="auth-description">
                 Sign in to access your finance workspace.
             </div>
             """, unsafe_allow_html=True)
 
             with st.form("login"):
-                email = st.text_input("Work email", placeholder="name@company.com")
-                password = st.text_input("Password", type="password")
-                go = st.form_submit_button("Sign in", use_container_width=True)
+                email = st.text_input(
+                    "Work email",
+                    placeholder="name@company.com"
+                )
+                password = st.text_input(
+                    "Password",
+                    type="password",
+                    placeholder="Enter your password"
+                )
+                go = st.form_submit_button(
+                    "Sign in  →",
+                    use_container_width=True
+                )
 
             if go:
                 user = authenticate(db, email, password)
@@ -365,19 +591,25 @@ def login_screen(db):
                     st.session_state.user_id = user.id
                     st.rerun()
                 else:
-                    st.error("Email or password is incorrect, or the account is inactive.")
+                    st.error(
+                        "Email or password is incorrect, or the account is inactive."
+                    )
 
         st.markdown("""
         <div class="setup-note">
-            <div class="setup-title">First time here?</div>
-            <div class="setup-copy">
-                Create the initial CFO account from Terminal using
-                the setup command in README.md.
+            <div class="setup-icon">✦</div>
+            <div>
+                <div class="setup-title">New to Ledgerly?</div>
+                <div class="setup-copy">
+                    Create your initial CFO account using the
+                    setup command in README.md.
+                </div>
             </div>
         </div>
+        <div class="auth-bottom">SECURE FINANCE WORKSPACE · LEDGERLY 2.0</div>
         """, unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 db=SessionLocal()
