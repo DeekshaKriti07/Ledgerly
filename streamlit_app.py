@@ -91,41 +91,293 @@ input,textarea,[data-baseweb="select"]>div{border-radius:9px!important}
 }
 @keyframes progressRun{to{width:100%}}
 @keyframes splashExit{to{opacity:0;visibility:hidden;pointer-events:none}}
-\n</style>""",unsafe_allow_html=True)
+\n
+/* LEDGERLY LOGIN REDESIGN */
+.stApp {
+    background:
+      radial-gradient(ellipse at 12% 15%, rgba(244,179,202,.19), transparent 34%),
+      radial-gradient(ellipse at 88% 82%, rgba(170,185,239,.17), transparent 36%),
+      radial-gradient(ellipse at 70% 8%, rgba(244,216,111,.13), transparent 30%),
+      #f6f0e9 !important;
+}
+.stApp::before {
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    opacity:.24;
+    background-image:
+      linear-gradient(rgba(65,55,45,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(65,55,45,.045) 1px, transparent 1px);
+    background-size:32px 32px;
+}
+.block-container {
+    position:relative;
+    z-index:1;
+    max-width:1320px !important;
+    padding-top:4rem !important;
+    padding-bottom:3rem !important;
+}
+.login-shell { min-height:75vh; }
+.login-brand { padding:50px 30px 35px 10px; }
+.login-eyebrow {
+    color:#746b63 !important;
+    font:700 11px 'DM Mono',monospace;
+    letter-spacing:3px;
+    margin-bottom:42px;
+}
+.login-headline {
+    color:#25231f !important;
+    font-size:clamp(48px,5.2vw,76px);
+    line-height:1.08;
+    font-weight:800;
+    letter-spacing:-4px;
+    margin-bottom:25px;
+}
+.login-headline span { color:#d989a9 !important; }
+.login-description {
+    color:#625b54 !important;
+    font-size:18px;
+    line-height:1.8;
+    max-width:490px;
+}
+.login-feature {
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-top:55px;
+    padding:20px;
+    max-width:470px;
+    background:rgba(255,250,242,.72);
+    border:1px solid #ded3c8;
+    border-radius:14px;
+}
+.feature-symbol {
+    display:grid;
+    place-items:center;
+    min-width:46px;
+    height:46px;
+    background:#f4b3ca;
+    border:1.5px solid #25231f;
+    border-radius:12px;
+    color:#25231f !important;
+    font-size:24px;
+}
+.feature-title { color:#25231f !important; font-weight:800; font-size:14px; }
+.feature-copy { color:#746b63 !important; font-size:12px; margin-top:5px; }
+.login-footer {
+    color:#81786f !important;
+    font:700 10px 'DM Mono',monospace;
+    letter-spacing:2px;
+    margin-top:75px;
+}
+.login-footer span { color:#d989a9 !important; padding:0 8px; }
+
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background:rgba(255,250,242,.88) !important;
+    border:1.5px solid #292722 !important;
+    border-radius:20px !important;
+    padding:30px !important;
+    box-shadow:6px 6px 0 #292722 !important;
+}
+.auth-heading {
+    color:#25231f !important;
+    font-size:32px;
+    font-weight:800;
+    letter-spacing:-1.3px;
+    margin:5px 0 8px;
+}
+.auth-description {
+    color:#746b63 !important;
+    font-size:14px;
+    margin-bottom:28px;
+}
+[data-testid="stTextInput"] label,
+[data-testid="stTextInput"] label p {
+    color:#39342f !important;
+    font-weight:700 !important;
+    font-size:13px !important;
+}
+[data-testid="stTextInput"] input {
+    background:#fffdf9 !important;
+    color:#25231f !important;
+    border:1.5px solid #cfc3b8 !important;
+    border-radius:10px !important;
+    min-height:49px;
+}
+[data-testid="stTextInput"] input::placeholder {
+    color:#999087 !important;
+    opacity:1 !important;
+}
+[data-testid="stFormSubmitButton"] button {
+    background:#25231f !important;
+    color:#fffaf2 !important;
+    border:1.5px solid #25231f !important;
+    border-radius:10px !important;
+    min-height:50px;
+    font-weight:800 !important;
+    box-shadow:3px 3px 0 #d9a3b7 !important;
+}
+[data-testid="stFormSubmitButton"] button:hover {
+    background:#d989a9 !important;
+    color:#25231f !important;
+}
+.setup-note {
+    margin-top:25px;
+    padding:22px 24px;
+    background:#202d40;
+    border-radius:14px;
+    border:1px solid #202d40;
+}
+.setup-title {
+    color:#f4d86f !important;
+    font-weight:800;
+    font-size:14px;
+    margin-bottom:8px;
+}
+.setup-copy {
+    color:#f7f0e8 !important;
+    font-size:13px;
+    line-height:1.7;
+}
+.intro-splash {
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    z-index:999999;
+    background:#f6f0e9;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    animation:splashExit .8s ease 3.8s forwards;
+}
+.intro-content { text-align:center; width:min(420px,85vw); }
+.intro-mark {
+    width:76px;height:76px;margin:0 auto 22px;
+    display:grid;place-items:center;background:#f4b3ca;
+    border:2px solid #20201e;border-radius:22px;
+    box-shadow:6px 6px 0 #20201e;font-size:43px;
+    animation:markEnter .8s cubic-bezier(.2,.8,.2,1) both;
+}
+.intro-word {
+    color:#20201e !important;font-size:42px;font-weight:900;
+    letter-spacing:5px;animation:wordEnter .8s .25s both;
+}
+.intro-tag {
+    color:#77736e !important;font:700 10px monospace;
+    letter-spacing:3px;margin-top:12px;
+    animation:wordEnter .8s .45s both;
+}
+.intro-track {
+    height:4px;background:#e2d9d0;border-radius:8px;
+    margin:38px auto 17px;overflow:hidden;
+}
+.intro-progress {
+    height:100%;width:0;background:#20201e;
+    animation:progressRun 2.7s .8s ease forwards;
+}
+.intro-caption {
+    color:#77736e !important;font:600 10px monospace;
+    letter-spacing:2px;
+}
+@keyframes markEnter {
+    from{opacity:0;transform:translateY(25px) scale(.75)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes wordEnter {
+    from{opacity:0;transform:translateY(12px)}
+    to{opacity:1;transform:translateY(0)}
+}
+@keyframes progressRun { to{width:100%} }
+@keyframes splashExit {
+    to{opacity:0;visibility:hidden;pointer-events:none}
+}
+@media(max-width:800px) {
+    .block-container { padding:1.5rem 1rem !important; }
+    .login-brand { padding:15px 5px 30px; }
+    .login-eyebrow { margin-bottom:25px; }
+    .login-headline { font-size:48px;letter-spacing:-2px; }
+    .login-footer { margin-top:30px; }
+    [data-testid="stVerticalBlockBorderWrapper"] { padding:20px !important; }
+}
+
+</style>""",unsafe_allow_html=True)
 
 def money(v): return f"₹{float(v):,.2f}"
+
 def login_screen(db):
-    st.markdown("<div style='height:5vh'></div>",unsafe_allow_html=True)
-    left,right=st.columns([1.1,1],gap="large")
+    if not st.session_state.get("ledgerly_intro_seen", False):
+        st.session_state["ledgerly_intro_seen"] = True
+        st.markdown("""
+        <div class="intro-splash">
+            <div class="intro-content">
+                <div class="intro-mark">◈</div>
+                <div class="intro-word">LEDGERLY</div>
+                <div class="intro-tag">FINANCE INTELLIGENCE PLATFORM</div>
+                <div class="intro-track"><div class="intro-progress"></div></div>
+                <div class="intro-caption">CLARITY IN EVERY NUMBER</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div class='login-shell'>", unsafe_allow_html=True)
+    left, right = st.columns([1.15, 0.85], gap="large")
+
     with left:
-        st.markdown("<div class='eyebrow'>FINANCE INTELLIGENCE PLATFORM</div><h1 style='font-size:3.4rem!important;margin-top:20px'>Clarity in every<br>number.</h1><p style='font-size:1.1rem;color:#68625c'>A calmer way to close the books, understand the business and stay in control.</p>",unsafe_allow_html=True)
-        if not st.session_state.get("ledgerly_intro_seen", False):
-            st.session_state["ledgerly_intro_seen"] = True
-            st.markdown("""
-            <div class="intro-splash">
-                <div class="intro-content">
-                    <div class="intro-mark">◈</div>
-                    <div class="intro-word">LEDGERLY</div>
-                    <div class="intro-tag">FINANCE INTELLIGENCE PLATFORM</div>
-                    <div class="intro-track"><div class="intro-progress"></div></div>
-                    <div class="intro-caption">CLARITY IN EVERY NUMBER</div>
+        st.markdown("""
+        <div class="login-brand">
+            <div class="login-eyebrow">FINANCE INTELLIGENCE PLATFORM</div>
+            <div class="login-headline">Clarity in<br>every number<span>.</span></div>
+            <div class="login-description">
+                A calmer way to close the books, understand the business
+                and stay in control.
+            </div>
+            <div class="login-feature">
+                <div class="feature-symbol">◈</div>
+                <div>
+                    <div class="feature-title">One connected finance workspace</div>
+                    <div class="feature-copy">Accounting · Reporting · Financial control</div>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            <div class="login-footer">LEDGERLY <span>/</span> FINANCE OPERATIONS</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     with right:
-        st.markdown("<div class='panel'>",unsafe_allow_html=True)
-        st.subheader("Welcome back")
-        st.caption("Sign in to your secure finance workspace.")
-        with st.form("login"):
-            email=st.text_input("Work email",placeholder="name@company.com")
-            password=st.text_input("Password",type="password")
-            go=st.form_submit_button("Sign in",use_container_width=True)
-        st.markdown("</div>",unsafe_allow_html=True)
-        if go:
-            user=authenticate(db,email,password)
-            if user: st.session_state.user_id=user.id; st.rerun()
-            else: st.error("Email or password is incorrect, or the account is inactive.")
-        st.info("First launch? Create the initial CFO account from Terminal using the setup command in README.md.")
+        with st.container(border=True):
+            st.markdown("""
+            <div class="auth-heading">Welcome back.</div>
+            <div class="auth-description">
+                Sign in to access your finance workspace.
+            </div>
+            """, unsafe_allow_html=True)
+
+            with st.form("login"):
+                email = st.text_input("Work email", placeholder="name@company.com")
+                password = st.text_input("Password", type="password")
+                go = st.form_submit_button("Sign in", use_container_width=True)
+
+            if go:
+                user = authenticate(db, email, password)
+                if user:
+                    st.session_state.user_id = user.id
+                    st.rerun()
+                else:
+                    st.error("Email or password is incorrect, or the account is inactive.")
+
+        st.markdown("""
+        <div class="setup-note">
+            <div class="setup-title">First time here?</div>
+            <div class="setup-copy">
+                Create the initial CFO account from Terminal using
+                the setup command in README.md.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 db=SessionLocal()
