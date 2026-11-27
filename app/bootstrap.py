@@ -1,5 +1,7 @@
 from app.database import init_db, SessionLocal
-from app.models import Account, Vendor, Customer, BankTransaction, Expense
+from app.models import Account, Vendor, Customer, BankTransaction, Expense, User
+from app.security import hash_password
+import os
 from datetime import date, timedelta
 import random
 def seed():
@@ -24,5 +26,8 @@ def seed():
             db.add(BankTransaction(txn_date=date.today()-timedelta(days=i),description=["NEFT vendor settlement","UPI customer receipt","Cloud infrastructure charge","Bank transfer"][i%4],debit=round(random.uniform(1000,25000),2) if i%3 else 0,credit=round(random.uniform(5000,50000),2) if i%3==0 else 0,reference=f"REF-{i+1:04}"))
     if db.query(Expense).count()==0:
         for i in range(35): db.add(Expense(expense_date=date.today()-timedelta(days=i),category=["Travel","Meals","Software","Office supplies"][i%4],amount=round(random.uniform(400,12000),2),employee=f"Employee {i%12+1:02}"))
+    if db.query(User).count()==0:
+        # Demo login so the app works on a fresh deploy. Override with DEMO_ADMIN_EMAIL / DEMO_ADMIN_PASSWORD.
+        db.add(User(full_name="Demo Admin",email=os.getenv("DEMO_ADMIN_EMAIL","demo@ledgerly.com"),password_hash=hash_password(os.getenv("DEMO_ADMIN_PASSWORD","LedgerlyDemo2026")),role="CFO"))
     db.commit(); db.close()
 if __name__=="__main__": seed()
