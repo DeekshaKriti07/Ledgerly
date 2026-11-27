@@ -1,805 +1,399 @@
-import streamlit as st
+from datetime import date, timedelta
+
 import pandas as pd
 import plotly.express as px
-from datetime import date, datetime
-from sqlalchemy import func
-from app.database import init_db,SessionLocal
+import streamlit as st
+
 from app.bootstrap import seed
-from app.models import User,Invoice,Vendor,Customer,JournalEntry,JournalLine,BankTransaction,Expense,PeriodLock,Account
-from app.security import authenticate,can_post,can_lock,can_admin,hash_password
-from app.ledger import post_entry,balances
+from app.database import SessionLocal
+from app.ledger import balances, post_entry
+from app.models import (Account, BankTransaction, Customer, Expense, Invoice, JournalEntry,
+                        PeriodLock, User, Vendor)
+from app.security import authenticate, can_admin, can_lock, can_post, hash_password
+from app.ui import (PAGES, brand, empty_state, esc, html_block, inject_theme, kpi_grid, login_art_html,
+                    money, page_header, pill, section, splash_html, status_kind, style_figure)
 
-st.set_page_config(page_title="Ledgerly — Finance Intelligence",page_icon="assets/favicon.png",layout="wide",initial_sidebar_state="expanded")
+st.set_page_config(page_title="Ledgerly — Finance Intelligence", page_icon="assets/favicon.png",
+                   layout="wide", initial_sidebar_state="expanded")
 seed()
-st.markdown("""<style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
-:root{--ink:#20201e;--paper:#f6f0e9;--card:#fffaf2;--pink:#f4b3ca;--yellow:#f4d86f;--mint:#83d6b1;--blue:#aab9ef;--muted:#77736e}
-html,body,[class*="css"]{font-family:'Manrope',sans-serif;color:var(--ink)}
-.stApp{background:var(--paper)}
-[data-testid="stHeader"]{background:rgba(246,240,233,.94)}
-[data-testid="stToolbar"]{visibility:hidden;height:0}
-[data-testid="stDecoration"]{display:none}
-.block-container{max-width:1500px;padding-top:2.2rem;padding-bottom:4rem}
-h1,h2,h3,h4,p,span,label,div{color:inherit}
-h1{font-weight:800;letter-spacing:-.055em;font-size:2.45rem!important}
-h2,h3{font-weight:800;letter-spacing:-.035em}
-section[data-testid="stSidebar"]{background:#fffaf2;border-right:1px solid #252522}
-section[data-testid="stSidebar"] *{color:#252522!important}
-.stButton>button,.stDownloadButton>button{border:1.5px solid #242421;border-radius:10px;background:#f4b3ca;color:#20201e;font-weight:800;min-height:42px;box-shadow:3px 3px 0 #20201e}
-.stButton>button:hover,.stDownloadButton>button:hover{background:#f4d86f;color:#20201e;border-color:#20201e}
-div[data-testid="stMetric"]{background:#fffaf2;border:1.5px solid #242421;border-radius:14px;padding:17px 18px;box-shadow:3px 3px 0 #242421}
-[data-testid="stMetricLabel"]{color:#66615b!important;font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
-[data-testid="stMetricValue"]{color:#20201e!important;font-size:1.85rem;font-weight:800}
-[data-testid="stMetricDelta"]{font-weight:700}
-[data-testid="stDataFrame"]{border:1px solid #ded5cb;border-radius:12px;overflow:hidden}
-[data-testid="stTabs"] button{font-weight:800;color:#56514c}
-[data-testid="stTabs"] button[aria-selected="true"]{color:#20201e;border-bottom:3px solid #e68daf}
-input,textarea,[data-baseweb="select"]>div{border-radius:9px!important}
-.hero{background:#fffaf2;border:1.5px solid #20201e;border-radius:18px;padding:30px 34px;box-shadow:5px 5px 0 #20201e;margin:18px 0 24px;animation:rise .7s ease both}
-.eyebrow{font:700 11px 'DM Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#756f68}
-.hero h2{font-size:2.1rem;margin:12px 0 8px;color:#20201e}
-.hero p{color:#66615b;margin:0}
-.brand{font-size:24px;font-weight:900;letter-spacing:-1.5px}
-.brandmark{display:inline-grid;place-items:center;width:35px;height:35px;background:#f4b3ca;border:1.5px solid #20201e;border-radius:10px;margin-right:9px}
-.panel{background:#fffaf2;border:1.5px solid #242421;border-radius:15px;padding:20px;box-shadow:3px 3px 0 #242421}
-@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:700px){h1{font-size:1.8rem!important}.hero h2{font-size:1.45rem}}
-
-.intro-splash{
- position:fixed;inset:0;width:100vw;height:100vh;
- z-index:999999;background:#f6f0e9;
- display:flex;align-items:center;justify-content:center;
- animation:splashExit .8s ease 3.8s forwards;
-}
-.intro-content{text-align:center;width:min(420px,85vw)}
-.intro-mark{
- width:76px;height:76px;margin:0 auto 22px;
- display:grid;place-items:center;background:#f4b3ca;
- border:2px solid #20201e;border-radius:22px;
- box-shadow:6px 6px 0 #20201e;font-size:43px;
- animation:markEnter .8s cubic-bezier(.2,.8,.2,1) both;
-}
-.intro-word{
- color:#20201e;font-size:42px;font-weight:900;
- letter-spacing:5px;animation:wordEnter .8s .25s both;
-}
-.intro-tag{
- color:#77736e;font:700 10px monospace;
- letter-spacing:3px;margin-top:12px;
- animation:wordEnter .8s .45s both;
-}
-.intro-track{
- height:4px;background:#e2d9d0;border-radius:8px;
- margin:38px auto 17px;overflow:hidden;
- animation:wordEnter .5s .6s both;
-}
-.intro-progress{
- height:100%;width:0;background:#20201e;
- animation:progressRun 2.7s .8s ease forwards;
-}
-.intro-caption{
- color:#77736e;font:600 10px monospace;
- letter-spacing:2px;animation:wordEnter .6s .7s both;
-}
-@keyframes markEnter{
- from{opacity:0;transform:translateY(25px) scale(.75)}
- to{opacity:1;transform:translateY(0) scale(1)}
-}
-@keyframes wordEnter{
- from{opacity:0;transform:translateY(12px)}
- to{opacity:1;transform:translateY(0)}
-}
-@keyframes progressRun{to{width:100%}}
-@keyframes splashExit{to{opacity:0;visibility:hidden;pointer-events:none}}
-\n
-/* LEDGERLY LOGIN REDESIGN */
-.stApp {
-    background:
-      radial-gradient(ellipse at 12% 15%, rgba(244,179,202,.19), transparent 34%),
-      radial-gradient(ellipse at 88% 82%, rgba(170,185,239,.17), transparent 36%),
-      radial-gradient(ellipse at 70% 8%, rgba(244,216,111,.13), transparent 30%),
-      #f6f0e9 !important;
-}
-.stApp::before {
-    content:"";
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    z-index:0;
-    opacity:.24;
-    background-image:
-      linear-gradient(rgba(65,55,45,.045) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(65,55,45,.045) 1px, transparent 1px);
-    background-size:32px 32px;
-}
-.block-container {
-    position:relative;
-    z-index:1;
-    max-width:1320px !important;
-    padding-top:4rem !important;
-    padding-bottom:3rem !important;
-}
-.login-shell { min-height:75vh; }
-.login-brand { padding:50px 30px 35px 10px; }
-.login-eyebrow {
-    color:#746b63 !important;
-    font:700 11px 'DM Mono',monospace;
-    letter-spacing:3px;
-    margin-bottom:42px;
-}
-.login-headline {
-    color:#25231f !important;
-    font-size:clamp(48px,5.2vw,76px);
-    line-height:1.08;
-    font-weight:800;
-    letter-spacing:-4px;
-    margin-bottom:25px;
-}
-.login-headline span { color:#d989a9 !important; }
-.login-description {
-    color:#625b54 !important;
-    font-size:18px;
-    line-height:1.8;
-    max-width:490px;
-}
-.login-feature {
-    display:flex;
-    align-items:center;
-    gap:16px;
-    margin-top:55px;
-    padding:20px;
-    max-width:470px;
-    background:rgba(255,250,242,.72);
-    border:1px solid #ded3c8;
-    border-radius:14px;
-}
-.feature-symbol {
-    display:grid;
-    place-items:center;
-    min-width:46px;
-    height:46px;
-    background:#f4b3ca;
-    border:1.5px solid #25231f;
-    border-radius:12px;
-    color:#25231f !important;
-    font-size:24px;
-}
-.feature-title { color:#25231f !important; font-weight:800; font-size:14px; }
-.feature-copy { color:#746b63 !important; font-size:12px; margin-top:5px; }
-.login-footer {
-    color:#81786f !important;
-    font:700 10px 'DM Mono',monospace;
-    letter-spacing:2px;
-    margin-top:75px;
-}
-.login-footer span { color:#d989a9 !important; padding:0 8px; }
-
-[data-testid="stVerticalBlockBorderWrapper"] {
-    background:rgba(255,250,242,.88) !important;
-    border:1.5px solid #292722 !important;
-    border-radius:20px !important;
-    padding:30px !important;
-    box-shadow:6px 6px 0 #292722 !important;
-}
-.auth-heading {
-    color:#25231f !important;
-    font-size:32px;
-    font-weight:800;
-    letter-spacing:-1.3px;
-    margin:5px 0 8px;
-}
-.auth-description {
-    color:#746b63 !important;
-    font-size:14px;
-    margin-bottom:28px;
-}
-[data-testid="stTextInput"] label,
-[data-testid="stTextInput"] label p {
-    color:#39342f !important;
-    font-weight:700 !important;
-    font-size:13px !important;
-}
-[data-testid="stTextInput"] input {
-    background:#fffdf9 !important;
-    color:#25231f !important;
-    border:1.5px solid #cfc3b8 !important;
-    border-radius:10px !important;
-    min-height:49px;
-}
-[data-testid="stTextInput"] input::placeholder {
-    color:#999087 !important;
-    opacity:1 !important;
-}
-[data-testid="stFormSubmitButton"] button {
-    background:#25231f !important;
-    color:#fffaf2 !important;
-    border:1.5px solid #25231f !important;
-    border-radius:10px !important;
-    min-height:50px;
-    font-weight:800 !important;
-    box-shadow:3px 3px 0 #d9a3b7 !important;
-}
-[data-testid="stFormSubmitButton"] button:hover {
-    background:#d989a9 !important;
-    color:#25231f !important;
-}
-.setup-note {
-    margin-top:25px;
-    padding:22px 24px;
-    background:#202d40;
-    border-radius:14px;
-    border:1px solid #202d40;
-}
-.setup-title {
-    color:#f4d86f !important;
-    font-weight:800;
-    font-size:14px;
-    margin-bottom:8px;
-}
-.setup-copy {
-    color:#f7f0e8 !important;
-    font-size:13px;
-    line-height:1.7;
-}
-.intro-splash {
-    position:fixed;
-    inset:0;
-    width:100vw;
-    height:100vh;
-    z-index:999999;
-    background:#f6f0e9;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    animation:splashExit .8s ease 3.8s forwards;
-}
-.intro-content { text-align:center; width:min(420px,85vw); }
-.intro-mark {
-    width:76px;height:76px;margin:0 auto 22px;
-    display:grid;place-items:center;background:#f4b3ca;
-    border:2px solid #20201e;border-radius:22px;
-    box-shadow:6px 6px 0 #20201e;font-size:43px;
-    animation:markEnter .8s cubic-bezier(.2,.8,.2,1) both;
-}
-.intro-word {
-    color:#20201e !important;font-size:42px;font-weight:900;
-    letter-spacing:5px;animation:wordEnter .8s .25s both;
-}
-.intro-tag {
-    color:#77736e !important;font:700 10px monospace;
-    letter-spacing:3px;margin-top:12px;
-    animation:wordEnter .8s .45s both;
-}
-.intro-track {
-    height:4px;background:#e2d9d0;border-radius:8px;
-    margin:38px auto 17px;overflow:hidden;
-}
-.intro-progress {
-    height:100%;width:0;background:#20201e;
-    animation:progressRun 2.7s .8s ease forwards;
-}
-.intro-caption {
-    color:#77736e !important;font:600 10px monospace;
-    letter-spacing:2px;
-}
-@keyframes markEnter {
-    from{opacity:0;transform:translateY(25px) scale(.75)}
-    to{opacity:1;transform:translateY(0) scale(1)}
-}
-@keyframes wordEnter {
-    from{opacity:0;transform:translateY(12px)}
-    to{opacity:1;transform:translateY(0)}
-}
-@keyframes progressRun { to{width:100%} }
-@keyframes splashExit {
-    to{opacity:0;visibility:hidden;pointer-events:none}
-}
-@media(max-width:800px) {
-    .block-container { padding:1.5rem 1rem !important; }
-    .login-brand { padding:15px 5px 30px; }
-    .login-eyebrow { margin-bottom:25px; }
-    .login-headline { font-size:48px;letter-spacing:-2px; }
-    .login-footer { margin-top:30px; }
-    [data-testid="stVerticalBlockBorderWrapper"] { padding:20px !important; }
-}
-
-</style>""",unsafe_allow_html=True)
-
-st.markdown("""<style>\n
-/* LEDGERLY BRAND EXPERIENCE */
-.stApp {
-    background:
-      radial-gradient(ellipse at 10% 10%,rgba(244,179,202,.22),transparent 32%),
-      radial-gradient(ellipse at 90% 80%,rgba(244,216,111,.16),transparent 32%),
-      #f6f0e9 !important;
-}
-.stApp::before {
-    content:"";
-    position:fixed;
-    inset:0;
-    z-index:0;
-    pointer-events:none;
-    opacity:.19;
-    background-image:
-      linear-gradient(rgba(52,42,35,.08) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(52,42,35,.08) 1px,transparent 1px);
-    background-size:34px 34px;
-}
-.block-container {
-    max-width:1450px !important;
-    padding-top:2.1rem !important;
-    padding-bottom:2rem !important;
-    position:relative;
-    z-index:1;
-}
-.ledger-login { min-height:80vh; }
-.login-eyebrow {
-    color:#776d64 !important;
-    font:700 10px 'DM Mono',monospace;
-    letter-spacing:2.3px;
-    margin-top:22px;
-}
-.login-headline {
-    color:#25231f !important;
-    font-size:clamp(43px,5vw,67px);
-    line-height:1.02;
-    letter-spacing:-3.5px;
-    font-weight:900;
-    margin-top:17px;
-}
-.login-headline span { color:#d989a9 !important; }
-.login-description {
-    max-width:470px;
-    color:#625b54 !important;
-    font-size:16px;
-    line-height:1.75;
-    margin-top:17px;
-}
-.login-benefits {
-    display:flex;
-    gap:0;
-    margin:23px 0 8px;
-}
-.login-benefits > div {
-    display:flex;
-    align-items:center;
-    gap:9px;
-    padding:8px 15px 8px 0;
-    margin-right:15px;
-    border-right:1px solid #d7c9bd;
-}
-.login-benefits > div:last-child { border:0; }
-.login-benefits b {
-    display:grid;
-    place-items:center;
-    width:35px;
-    height:35px;
-    background:#f4b3ca;
-    color:#25231f !important;
-    border:1px solid #25231f;
-    border-radius:10px;
-    font-size:11px;
-}
-.login-benefits span {
-    color:#49433d !important;
-    font-size:11px;
-    font-weight:700;
-    line-height:1.4;
-}
-.login-brand img { object-fit:contain; }
-[data-testid="stImage"] img {
-    animation:illustrationFloat 5s ease-in-out infinite;
-}
-.login-footer {
-    font:700 10px 'DM Mono',monospace;
-    color:#746a61 !important;
-    letter-spacing:2px;
-    margin-top:2px;
-}
-.login-footer span { color:#df88a9 !important; }
-.auth-topline {
-    color:#80746b !important;
-    font:700 10px 'DM Mono',monospace;
-    letter-spacing:2px;
-    text-align:center;
-    margin:30px 0 14px;
-}
-[data-testid="stVerticalBlockBorderWrapper"] {
-    background:rgba(255,250,242,.94) !important;
-    border:1.5px solid #28251f !important;
-    border-radius:20px !important;
-    padding:27px !important;
-    box-shadow:6px 6px 0 #28251f !important;
-}
-.auth-heading {
-    font-size:34px;
-    line-height:1.2;
-    letter-spacing:-1.7px;
-    font-weight:900;
-    color:#25231f !important;
-    margin:5px 0 9px;
-}
-.auth-heading span { color:#df88a9 !important; }
-.auth-description {
-    font-size:13px;
-    color:#746a61 !important;
-    margin-bottom:25px;
-}
-[data-testid="stTextInput"] label,
-[data-testid="stTextInput"] label p {
-    color:#38332e !important;
-    font-size:13px !important;
-    font-weight:800 !important;
-}
-[data-testid="stTextInput"] input {
-    background:#fffdf9 !important;
-    color:#25231f !important;
-    border:1.5px solid #cbbeb2 !important;
-    border-radius:10px !important;
-    min-height:48px;
-}
-[data-testid="stTextInput"] input::placeholder {
-    color:#8e857d !important;
-    opacity:1 !important;
-}
-[data-testid="stFormSubmitButton"] button {
-    background:#25231f !important;
-    color:#fffaf2 !important;
-    border:1.5px solid #25231f !important;
-    border-radius:10px !important;
-    min-height:49px;
-    font-weight:800 !important;
-    box-shadow:3px 3px 0 #e8a6bd !important;
-    transition:transform .2s,background .2s !important;
-}
-[data-testid="stFormSubmitButton"] button:hover {
-    background:#f4b3ca !important;
-    color:#25231f !important;
-    transform:translateY(-2px);
-}
-.setup-note {
-    display:flex;
-    align-items:center;
-    gap:15px;
-    background:#25231f;
-    border:1px solid #25231f;
-    border-radius:14px;
-    padding:17px;
-    margin-top:22px;
-}
-.setup-icon {
-    display:grid;
-    place-items:center;
-    min-width:40px;
-    height:40px;
-    background:#f4d86f;
-    border-radius:12px;
-    color:#25231f !important;
-    font-size:23px;
-}
-.setup-title {
-    color:#f4d86f !important;
-    font-size:13px;
-    font-weight:800;
-}
-.setup-copy {
-    color:#fffaf2 !important;
-    font-size:11px;
-    line-height:1.6;
-    margin-top:4px;
-}
-.auth-bottom {
-    text-align:center;
-    color:#82766c !important;
-    font:600 9px 'DM Mono',monospace;
-    letter-spacing:1.5px;
-    margin-top:22px;
-}
-@keyframes illustrationFloat {
-    0%,100% { transform:translateY(0); }
-    50% { transform:translateY(-7px); }
-}
-@media(max-width:850px) {
-    .block-container { padding:1rem !important; }
-    .login-headline { font-size:45px; }
-    .auth-topline { margin-top:10px; }
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        padding:18px !important;
-    }
-}
-\n</style>""", unsafe_allow_html=True)
-
-def money(v): return f"₹{float(v):,.2f}"
+inject_theme()
 
 
+def table(df: pd.DataFrame, money_cols=(), empty=("Nothing here yet", "Records will show up here once added.", "🌱"), height=None):
+    """Render a dataframe with rupee formatting, or a friendly empty state."""
+    if df.empty:
+        empty_state(*empty)
+        return
+    cfg = {c: st.column_config.NumberColumn(c, format="₹%.2f") for c in money_cols if c in df.columns}
+    extra = {"height": height} if height else {}
+    st.dataframe(df, hide_index=True, width="stretch", column_config=cfg, **extra)
+
+
+# ------------------------------------------------------------------ Login
 def login_screen(db):
     if not st.session_state.get("ledgerly_intro_seen", False):
         st.session_state["ledgerly_intro_seen"] = True
-        st.markdown("""
-        <div class="intro-splash">
-            <div class="intro-content">
-                <div class="intro-mark">L</div>
-                <div class="intro-word">LEDGERLY</div>
-                <div class="intro-tag">FINANCE INTELLIGENCE PLATFORM</div>
-                <div class="intro-track"><div class="intro-progress"></div></div>
-                <div class="intro-caption">CLARITY IN EVERY NUMBER</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        html_block(splash_html())
 
-    st.markdown('<div class="ledger-login">', unsafe_allow_html=True)
-
-    left, right = st.columns([1.15, 0.85], gap="large")
-
+    left, right = st.columns([1.3, 1], gap="large")
     with left:
-        st.image("assets/ledgerly_logo.png", width=245)
-
-        st.markdown("""
-        <div class="login-eyebrow">YOUR FINANCE INTELLIGENCE PLATFORM</div>
-        <div class="login-headline">
-            Clarity in<br>every <span>number.</span>
-        </div>
-        <div class="login-description">
-            A smarter, calmer way to manage your finances,
-            understand your business and grow with confidence.
-        </div>
-        <div class="login-benefits">
-            <div><b>01</b><span>Insightful<br>reports</span></div>
-            <div><b>02</b><span>Automated<br>workflows</span></div>
-            <div><b>03</b><span>Financial<br>control</span></div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.image("assets/ledgerly_finance_illustration.png", width=570)
-
-        st.markdown("""
-        <div class="login-footer">
-            LEDGERLY <span>✳</span> PLAN · TRACK · GROW
-        </div>
-        """, unsafe_allow_html=True)
-
+        html_block(login_art_html())
     with right:
-        st.markdown('<div class="auth-topline">YOUR WORKSPACE AWAITS</div>',
-                    unsafe_allow_html=True)
-
-        with st.container(border=True):
-            st.markdown("""
-            <div class="auth-heading">Welcome back<span>.</span></div>
-            <div class="auth-description">
-                Sign in to access your finance workspace.
-            </div>
-            """, unsafe_allow_html=True)
-
-            with st.form("login"):
-                email = st.text_input(
-                    "Work email",
-                    placeholder="name@company.com"
-                )
-                password = st.text_input(
-                    "Password",
-                    type="password",
-                    placeholder="Enter your password"
-                )
-                go = st.form_submit_button(
-                    "Sign in  →",
-                    use_container_width=True
-                )
-
-            if go:
-                user = authenticate(db, email, password)
-                if user:
-                    st.session_state.user_id = user.id
-                    st.rerun()
-                else:
-                    st.error(
-                        "Email or password is incorrect, or the account is inactive."
-                    )
-
-        st.markdown("""
-        <div class="setup-note">
-            <div class="setup-icon">✦</div>
-            <div>
-                <div class="setup-title">New to Ledgerly?</div>
-                <div class="setup-copy">
-                    Create your initial CFO account using the
-                    setup command in README.md.
-                </div>
-            </div>
-        </div>
-        <div class="auth-bottom">SECURE FINANCE WORKSPACE · LEDGERLY 2.0</div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+        html_block("""<div class="signin-head"><div class="eyebrow">Your workspace awaits</div>
+            <h2>Welcome back<em>.</em></h2><p>Sign in to open your finance workspace.</p></div>""")
+        with st.form("login"):
+            email = st.text_input("Work email", placeholder="name@company.com")
+            password = st.text_input("Password", type="password", placeholder="Enter your password")
+            go = st.form_submit_button("Sign in →", width="stretch")
+        if go:
+            user = authenticate(db, email, password)
+            if user:
+                st.session_state.user_id = user.id
+                st.rerun()
+            else:
+                st.error("Email or password is incorrect, or the account is inactive.")
+        html_block("""<div class="tile t-mint setup" style="--i:4"><div class="em-icon">✦</div><div>
+            <b>New to Ledgerly?</b><span>Create your first CFO account with the setup command in README.md.</span></div></div>
+            <div class="legal">SECURE FINANCE WORKSPACE · LEDGERLY 2.0</div>""")
     st.stop()
 
-db=SessionLocal()
-if "user_id" not in st.session_state or not db.get(User,st.session_state.get("user_id")):
-    login_screen(db)
-user=db.get(User,st.session_state.user_id)
-if not user.is_active:
-    st.session_state.pop("user_id",None); st.rerun()
 
+db = SessionLocal()
+if "user_id" not in st.session_state or not db.get(User, st.session_state.get("user_id")):
+    login_screen(db)
+user = db.get(User, st.session_state.user_id)
+if not user.is_active:
+    st.session_state.pop("user_id", None)
+    st.rerun()
+
+# ------------------------------------------------------------------ Sidebar
 with st.sidebar:
-    st.markdown("<div class='brand'><span class='brandmark'>◈</span>LEDGERLY</div><div class='eyebrow' style='margin:8px 0 22px'>FINANCE INTELLIGENCE</div>",unsafe_allow_html=True)
-    st.write(f"**{user.full_name}**")
-    st.caption(f"{user.role} · {user.email}")
-    st.divider()
-    page=st.radio("WORKSPACE",["Overview","General Ledger","Journal Entries","Invoices","Banking","Expenses","Vendors & Customers","Financial Statements","Administration"],label_visibility="collapsed")
-    st.divider()
-    st.caption("WORKSPACE STATUS")
-    st.markdown("● Database connected")
-    if st.button("Sign out",use_container_width=True):
-        st.session_state.pop("user_id",None); st.rerun()
+    html_block(brand())
+    html_block(f"""<div class="user-card"><b>{esc(user.full_name)}</b><span>{esc(user.email)}</span>
+        {pill(user.role, '')}</div><div class="side-label">Workspace</div>""")
+    page = st.radio("Workspace", list(PAGES), label_visibility="collapsed",
+                    format_func=lambda p: f"{PAGES[p][0]}  {p}")
+    html_block('<div class="side-label">Status</div><div class="side-status"><span class="status-dot"></span>Database connected</div>')
+    if st.button("Sign out", width="stretch"):
+        st.session_state.pop("user_id", None)
+        st.rerun()
     st.caption("Ledgerly v2.0 · Demo environment")
 
-st.markdown("<div class='eyebrow'>FINANCE OPERATIONS / CONTROL ROOM</div>",unsafe_allow_html=True)
-st.title(page)
-if page=="Overview":
-    journals=db.query(JournalEntry).count()
-    invoices=db.query(Invoice).count()
-    pending=db.query(Invoice).filter(Invoice.status=="Pending").count()
-    vendors=db.query(Vendor).count()
-    c1,c2,c3,c4=st.columns(4)
-    c1.metric("Posted journals",journals)
-    c2.metric("Invoices recorded",invoices)
-    c3.metric("Pending invoices",pending)
-    c4.metric("Active vendors",vendors)
-    st.markdown("<div class='hero'><div class='eyebrow'>LEDGERLY INTELLIGENCE</div><h2>Close the books. Not your momentum.</h2><p>Your finance operations, journal controls and reporting in one connected workspace.</p></div>",unsafe_allow_html=True)
-    left,right=st.columns([1.55,1])
-    with left:
-        st.subheader("Transaction activity")
-        q=db.query(JournalEntry).order_by(JournalEntry.entry_date).all()
-        if q:
-            df=pd.DataFrame([{"Date":x.entry_date,"Journal":x.entry_no,"Description":x.description} for x in q])
-            st.dataframe(df,use_container_width=True,hide_index=True)
-        else:
-            st.info("No journals posted yet. Start by creating a balanced journal entry.")
-    with right:
-        st.subheader("Close checklist")
-        for label,done in [("Chart of accounts configured",db.query(Account).count()>0),("User authenticated",True),("Journal activity recorded",journals>0),("Invoices reviewed",invoices>0),("Bank reconciliation reviewed",db.query(BankTransaction).filter_by(status="Matched").count()>0)]:
-            st.write(("✓ " if done else "○ ")+label)
-        st.progress(sum([db.query(Account).count()>0,True,journals>0,invoices>0,db.query(BankTransaction).filter_by(status="Matched").count()>0])/5)
-    st.subheader("Operational signals")
-    a,b,c=st.columns(3)
-    a.metric("Bank lines awaiting review",db.query(BankTransaction).filter_by(status="Unmatched").count())
-    b.metric("Employee expenses",db.query(Expense).count())
-    c.metric("Chart of accounts",db.query(Account).count())
-elif page=="General Ledger":
-    st.subheader("General ledger")
-    rows=[]
+SUBTITLES = {
+    "Overview": f"Welcome back, {user.full_name.split()[0] if user.full_name.strip() else 'there'}. Here is where the books stand today.",
+    "General Ledger": "Every posted debit and credit, line by line.",
+    "Journal Entries": "Post balanced entries. Debits must equal credits, always.",
+    "Invoices": "Track vendor invoices from received to settled.",
+    "Banking": "Review statement lines and match them to your ledger.",
+    "Expenses": "Employee spend, categorised and on record.",
+    "Vendors & Customers": "The people and companies you do business with.",
+    "Financial Statements": "Trial balance, income and balance-sheet snapshot.",
+    "Administration": "Users, roles and accounting period controls.",
+}
+page_header(page, SUBTITLES[page])
+
+# ------------------------------------------------------------------ Pages
+if page == "Overview":
+    journals = db.query(JournalEntry).count()
+    invoices = db.query(Invoice).count()
+    pending = db.query(Invoice).filter(Invoice.status == "Pending").count()
+    vendors = db.query(Vendor).count()
+    accounts_n = db.query(Account).count()
+    matched = db.query(BankTransaction).filter_by(status="Matched").count()
+    unmatched = db.query(BankTransaction).filter_by(status="Unmatched").count()
+
+    html_block(f"""<div class="bento cols-4">
+      <div class="tile t-cream hero span-2 row-2" style="--i:0"><div class="eyebrow">Ledgerly intelligence</div>
+        <h2>Close the books. Not your momentum.</h2>
+        <p>Your finance operations, journal controls and reporting in one connected workspace.</p>
+        <div class="hero-chips">{pill(f'{unmatched} bank lines to review', 'warn')}{pill(f'{pending} pending invoices', 'pink')}</div>
+        <div class="sticker" style="--rot:9deg">🚀</div></div>
+      {''.join([
+        f'<div class="tile kpi t-{c}" style="--i:{i + 1}"><div class="kpi-top"><div class="kpi-label">{l}</div><div class="kpi-icon">{ic}</div></div><div class="kpi-value">{v}</div></div>'
+        for i, (l, v, c, ic) in enumerate([("Posted journals", journals, "pink", "✍️"), ("Invoices recorded", invoices, "yellow", "🧾"),
+                                           ("Pending invoices", pending, "coral", "⏳"), ("Active vendors", vendors, "mint", "🤝")])])}
+    </div>""")
+
+    c_left, c_right = st.columns([1.55, 1], gap="large")
+    with c_left:
+        section("Cash movement", "last 30 days")
+        with st.container(border=True, key="tile-1"):
+            since = date.today() - timedelta(days=29)
+            tx = db.query(BankTransaction).filter(BankTransaction.txn_date >= since).all()
+            if tx:
+                df = pd.DataFrame([{"Date": t.txn_date, "Money in": t.credit, "Money out": t.debit} for t in tx])
+                df = df.groupby("Date", as_index=False).sum().sort_values("Date")
+                fig = px.bar(df, x="Date", y=["Money in", "Money out"], barmode="group",
+                             color_discrete_map={"Money in": "#55d6a0", "Money out": "#ff7a63"})
+                st.plotly_chart(style_figure(fig, 300), width="stretch", config={"displayModeBar": False})
+            else:
+                empty_state("No bank activity", "Imported bank lines will chart here.", "🏦")
+    with c_right:
+        section("Close checklist")
+        steps = [("Chart of accounts configured", accounts_n > 0), ("User authenticated", True),
+                 ("Journal activity recorded", journals > 0), ("Invoices reviewed", invoices > 0),
+                 ("Bank reconciliation started", matched > 0)]
+        done = sum(1 for _, d in steps if d)
+        rows = "".join(f'<div class="check {"done" if d else ""}"><div class="box">{"✓" if d else ""}</div><span class="txt">{esc(l)}</span></div>' for l, d in steps)
+        html_block(f'<div class="tile t-white" style="--i:2">{rows}<div class="bar"><i style="width:{done / len(steps) * 100:.0f}%"></i></div>'
+                   f'<div class="eyebrow" style="margin-top:10px">{done} of {len(steps)} complete</div></div>')
+
+    e_left, e_right = st.columns([1, 1.55], gap="large")
+    with e_left:
+        section("Spend by category")
+        with st.container(border=True, key="tile-2"):
+            ex = db.query(Expense).all()
+            if ex:
+                edf = pd.DataFrame([{"Category": e.category, "Amount": e.amount} for e in ex]).groupby("Category", as_index=False).sum()
+                fig = px.pie(edf, names="Category", values="Amount", hole=.55)
+                fig.update_traces(marker=dict(line=dict(color="#1b1a17", width=2.5)), textinfo="percent")
+                st.plotly_chart(style_figure(fig, 290), width="stretch", config={"displayModeBar": False})
+            else:
+                empty_state("No expenses", "Record an expense to see the mix.", "💸")
+    with e_right:
+        section("Recent journal activity")
+        q = db.query(JournalEntry).order_by(JournalEntry.entry_date.desc()).limit(8).all()
+        table(pd.DataFrame([{"Date": x.entry_date, "Journal": x.entry_no, "Description": x.description} for x in q]),
+              empty=("No journals posted yet", "Start by creating a balanced journal entry.", "✍️"))
+    section("Operational signals")
+    kpi_grid([dict(label="Bank lines awaiting review", value=unmatched, color="sky", icon="🏦", compact=True),
+              dict(label="Employee expenses", value=db.query(Expense).count(), color="pink", icon="💸", compact=True),
+              dict(label="Chart of accounts", value=accounts_n, color="yellow", icon="📒", compact=True)], cols=3)
+
+elif page == "General Ledger":
+    rows = []
+    names = {a.code: a.name for a in db.query(Account).all()}
+    people = {u.id: u.full_name for u in db.query(User).all()}
     for e in db.query(JournalEntry).order_by(JournalEntry.entry_date.desc()).all():
         for l in e.lines:
-            a=db.get(Account,l.account_code)
-            rows.append({"Date":e.entry_date,"Journal":e.entry_no,"Description":e.description,"Account":a.name if a else "Unknown","Debit":l.debit,"Credit":l.credit,"Created by":db.get(User,e.created_by).full_name})
-    if rows: st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
-    else: st.info("The general ledger is empty. Post a journal entry to populate it.")
-elif page=="Journal Entries":
-    st.subheader("Create a journal entry")
-    if not can_post(user): st.warning("Your Auditor role has read-only access.")
-    else:
-        accounts=db.query(Account).order_by(Account.code).all()
-        with st.form("new_journal"):
-            dt=st.date_input("Posting date",value=date.today())
-            desc=st.text_input("Description",placeholder="Monthly cloud hosting expense")
-            cols=st.columns(2)
-            debit=cols[0].selectbox("Debit account",accounts,format_func=lambda x:f"{x.code} · {x.name}")
-            credit=cols[1].selectbox("Credit account",accounts,format_func=lambda x:f"{x.code} · {x.name}",index=min(12,len(accounts)-1))
-            amount=st.number_input("Amount (INR)",min_value=0.01,value=10000.0,step=100.0)
-            submit=st.form_submit_button("Validate & post journal")
-        if submit:
-            try:
-                entry=post_entry(db,user,dt,desc,[{"account_code":debit.code,"debit":amount},{"account_code":credit.code,"credit":amount}])
-                st.success(f"Posted {entry.entry_no}. Debits equal credits.")
-            except Exception as ex: st.error(str(ex))
-    recent=db.query(JournalEntry).order_by(JournalEntry.created_at.desc()).limit(20).all()
-    st.subheader("Recent journal entries")
-    st.dataframe(pd.DataFrame([{"Journal":e.entry_no,"Date":e.entry_date,"Description":e.description,"Status":e.status} for e in recent]),use_container_width=True,hide_index=True)
-elif page=="Invoices":
-    st.subheader("Invoice register")
-    vendors=db.query(Vendor).order_by(Vendor.name).all()
+            rows.append({"Date": e.entry_date, "Journal": e.entry_no, "Description": e.description,
+                         "Account": names.get(l.account_code, "Unknown"), "Debit": l.debit, "Credit": l.credit,
+                         "Created by": people.get(e.created_by, "Unknown")})
+    df = pd.DataFrame(rows)
+    if not df.empty:
+        kpi_grid([dict(label="Journal lines", value=len(df), color="yellow", icon="📒", compact=True),
+                  dict(label="Total debits", value=money(df.Debit.sum()), color="mint", icon="⬇️", compact=True),
+                  dict(label="Total credits", value=money(df.Credit.sum()), color="pink", icon="⬆️", compact=True)], cols=3)
+    table(df, ("Debit", "Credit"), ("The ledger is empty", "Post a journal entry to populate it.", "📒"))
+
+elif page == "Journal Entries":
+    f_col, r_col = st.columns([1, 1.25], gap="large")
+    with f_col:
+        section("New entry")
+        if not can_post(user):
+            st.warning("Your Auditor role has read-only access.")
+        else:
+            accounts = db.query(Account).order_by(Account.code).all()
+            with st.form("new_journal"):
+                dt = st.date_input("Posting date", value=date.today())
+                desc = st.text_input("Description", placeholder="Monthly cloud hosting expense")
+                debit = st.selectbox("Debit account", accounts, format_func=lambda x: f"{x.code} · {x.name}")
+                credit = st.selectbox("Credit account", accounts, format_func=lambda x: f"{x.code} · {x.name}", index=min(12, len(accounts) - 1))
+                amount = st.number_input("Amount (INR)", min_value=0.01, value=10000.0, step=100.0)
+                submit = st.form_submit_button("Validate & post journal", width="stretch")
+            if submit:
+                try:
+                    entry = post_entry(db, user, dt, desc, [{"account_code": debit.code, "debit": amount}, {"account_code": credit.code, "credit": amount}])
+                    st.success(f"Posted {entry.entry_no}. Debits equal credits.")
+                except Exception as ex:
+                    st.error(str(ex))
+    with r_col:
+        section("Recent entries", "latest 20")
+        recent = db.query(JournalEntry).order_by(JournalEntry.created_at.desc()).limit(20).all()
+        table(pd.DataFrame([{"Journal": e.entry_no, "Date": e.entry_date, "Description": e.description, "Status": e.status} for e in recent]),
+              empty=("No entries yet", "Your first posted journal will appear here.", "✍️"))
+
+elif page == "Invoices":
+    vendors = db.query(Vendor).order_by(Vendor.name).all()
+    data = db.query(Invoice).order_by(Invoice.invoice_date.desc()).all()
+    kpi_grid([dict(label="Invoices", value=len(data), color="sky", icon="🧾", compact=True),
+              dict(label="Pending", value=sum(1 for i in data if i.status == "Pending"), color="yellow", icon="⏳", compact=True),
+              dict(label="Total value", value=money(sum(i.total for i in data)), color="mint", icon="💰", compact=True)], cols=3)
     if can_post(user):
-        with st.expander("Add invoice",expanded=False):
+        with st.expander("➕ Add invoice"):
             with st.form("invoice_form"):
-                no=st.text_input("Invoice number")
-                vendor=st.selectbox("Vendor",vendors,format_func=lambda x:x.name) if vendors else None
-                dt=st.date_input("Invoice date",value=date.today())
-                due=st.date_input("Due date",value=date.today())
-                subtotal=st.number_input("Subtotal",min_value=0.0,value=10000.0)
-                tax=st.number_input("Tax",min_value=0.0,value=1800.0)
-                save=st.form_submit_button("Save invoice")
+                c1, c2 = st.columns(2)
+                no = c1.text_input("Invoice number")
+                vendor = c2.selectbox("Vendor", vendors, format_func=lambda x: x.name) if vendors else None
+                dt = c1.date_input("Invoice date", value=date.today())
+                due = c2.date_input("Due date", value=date.today())
+                subtotal = c1.number_input("Subtotal", min_value=0.0, value=10000.0)
+                tax = c2.number_input("Tax", min_value=0.0, value=1800.0)
+                save = st.form_submit_button("Save invoice")
             if save:
-                if not no.strip(): st.error("Invoice number is required.")
-                elif db.query(Invoice).filter_by(invoice_no=no.strip()).first(): st.error("Invoice number already exists.")
+                if not no.strip():
+                    st.error("Invoice number is required.")
+                elif db.query(Invoice).filter_by(invoice_no=no.strip()).first():
+                    st.error("Invoice number already exists.")
                 else:
-                    db.add(Invoice(invoice_no=no.strip(),vendor_id=vendor.id if vendor else None,invoice_date=dt,due_date=due,subtotal=subtotal,tax=tax,total=subtotal+tax)); db.commit(); st.success("Invoice saved to database."); st.rerun()
-    data=db.query(Invoice).order_by(Invoice.invoice_date.desc()).all()
-    st.dataframe(pd.DataFrame([{"Invoice":i.invoice_no,"Vendor":i.vendor.name if i.vendor else "—","Date":i.invoice_date,"Due":i.due_date,"Subtotal":i.subtotal,"Tax":i.tax,"Total":i.total,"Status":i.status} for i in data]),use_container_width=True,hide_index=True)
-elif page=="Banking":
-    st.subheader("Bank transactions")
-    tx=db.query(BankTransaction).order_by(BankTransaction.txn_date.desc()).all()
-    st.caption("Review transaction rows and mark matched only after checking the supporting ledger entry.")
-    for t in tx[:30]:
-        c1,c2,c3,c4=st.columns([2.5,1.3,1,1])
-        c1.write(f"{t.txn_date} · {t.description}")
-        c2.write(money(t.debit or t.credit))
-        c3.write(t.status)
-        if c4.button("Match" if t.status=="Unmatched" else "Matched",key=f"match{t.id}",disabled=t.status=="Matched" or not can_post(user)):
-            t.status="Matched"; db.commit(); st.rerun()
-    st.download_button("Export bank CSV",pd.DataFrame([{"Date":t.txn_date,"Description":t.description,"Debit":t.debit,"Credit":t.credit,"Status":t.status} for t in tx]).to_csv(index=False),"bank_transactions.csv","text/csv")
-elif page=="Expenses":
-    st.subheader("Employee expense register")
+                    db.add(Invoice(invoice_no=no.strip(), vendor_id=vendor.id if vendor else None, invoice_date=dt, due_date=due,
+                                   subtotal=subtotal, tax=tax, total=subtotal + tax))
+                    db.commit()
+                    st.success("Invoice saved to database.")
+                    st.rerun()
+    section("Invoice register")
+    table(pd.DataFrame([{"Invoice": i.invoice_no, "Vendor": i.vendor.name if i.vendor else "—", "Date": i.invoice_date, "Due": i.due_date,
+                         "Subtotal": i.subtotal, "Tax": i.tax, "Total": i.total, "Status": i.status} for i in data]),
+          ("Subtotal", "Tax", "Total"), ("No invoices yet", "Add your first invoice above.", "🧾"))
+
+elif page == "Banking":
+    tx_all = db.query(BankTransaction).order_by(BankTransaction.txn_date.desc(), BankTransaction.id.desc()).all()
+    kpi_grid([dict(label="Awaiting review", value=sum(t.status == "Unmatched" for t in tx_all), color="yellow", icon="⏳", compact=True),
+              dict(label="Matched", value=sum(t.status == "Matched" for t in tx_all), color="mint", icon="✅", compact=True),
+              dict(label="Money in", value=money(sum(t.credit for t in tx_all)), color="sky", icon="⬇️", compact=True),
+              dict(label="Money out", value=money(sum(t.debit for t in tx_all)), color="pink", icon="⬆️", compact=True)], cols=4)
+    f1, f2 = st.columns([2, 1])
+    flt = f1.segmented_control("Show", ["All", "Unmatched", "Matched"], default="All", label_visibility="collapsed") or "All"
+    limit = f2.selectbox("Rows", [15, 30, 60], index=1, label_visibility="collapsed", format_func=lambda n: f"Latest {n} rows")
+    tx = [t for t in tx_all if flt == "All" or t.status == flt][:limit]
+    st.caption("Mark a line as matched only after checking the supporting ledger entry.")
+    if not tx:
+        empty_state("Nothing to show", "No bank lines match this filter.", "🏦")
+    with st.container(border=True, key="tile-3"):
+        if tx:
+            h = st.columns([1.2, 3, 1.4, 1.2, 1.1])
+            for col, label in zip(h, ["Date", "Description", "Amount", "Status", ""]):
+                col.markdown(f'<div class="txn-head">{label}</div>', unsafe_allow_html=True)
+        for t in tx:
+            c1, c2, c3, c4, c5 = st.columns([1.2, 3, 1.4, 1.2, 1.1], vertical_alignment="center")
+            c1.markdown(f'<div class="txn-row-text mono">{t.txn_date:%d %b %Y}</div>', unsafe_allow_html=True)
+            c2.markdown(f'<div class="txn-row-text">{esc(t.description)}</div>', unsafe_allow_html=True)
+            is_in = bool(t.credit) and not t.debit
+            c3.markdown(f'<div class="txn-row-text {"amt-in" if is_in else "amt-out"}">{"+" if is_in else "−"}{money(t.credit or t.debit)}</div>', unsafe_allow_html=True)
+            c4.markdown(pill(t.status, status_kind(t.status)), unsafe_allow_html=True)
+            if t.status == "Unmatched" and c5.button("Match", key=f"match{t.id}", disabled=not can_post(user)):
+                t.status = "Matched"
+                db.commit()
+                st.rerun()
+    st.download_button("⬇ Export bank CSV", pd.DataFrame([{"Date": t.txn_date, "Description": t.description, "Debit": t.debit, "Credit": t.credit, "Status": t.status} for t in tx_all]).to_csv(index=False),
+                       "bank_transactions.csv", "text/csv")
+
+elif page == "Expenses":
+    exp = db.query(Expense).order_by(Expense.expense_date.desc()).all()
+    kpi_grid([dict(label="Expense claims", value=len(exp), color="coral", icon="💸", compact=True),
+              dict(label="Total spend", value=money(sum(e.amount for e in exp)), color="yellow", icon="💰", compact=True),
+              dict(label="Pending approval", value=sum(e.status == "Pending" for e in exp), color="sky", icon="⏳", compact=True)], cols=3)
     if can_post(user):
-        with st.expander("Record expense"):
+        with st.expander("➕ Record expense"):
             with st.form("expense_form"):
-                employee=st.text_input("Employee")
-                cat=st.selectbox("Category",["Travel","Meals","Software","Office supplies","Utilities","Other"])
-                amt=st.number_input("Amount",min_value=1.0,value=1200.0)
-                dt=st.date_input("Expense date",value=date.today())
-                save=st.form_submit_button("Save expense")
+                c1, c2 = st.columns(2)
+                employee = c1.text_input("Employee")
+                cat = c2.selectbox("Category", ["Travel", "Meals", "Software", "Office supplies", "Utilities", "Other"])
+                amt = c1.number_input("Amount", min_value=1.0, value=1200.0)
+                dt = c2.date_input("Expense date", value=date.today())
+                save = st.form_submit_button("Save expense")
             if save:
-                db.add(Expense(employee=employee,category=cat,amount=amt,expense_date=dt)); db.commit(); st.success("Expense saved."); st.rerun()
-    exp=db.query(Expense).order_by(Expense.expense_date.desc()).all()
-    st.dataframe(pd.DataFrame([{"Date":e.expense_date,"Employee":e.employee,"Category":e.category,"Amount":e.amount,"Status":e.status} for e in exp]),use_container_width=True,hide_index=True)
-elif page=="Vendors & Customers":
-    t1,t2=st.tabs(["Vendors","Customers"])
+                db.add(Expense(employee=employee, category=cat, amount=amt, expense_date=dt))
+                db.commit()
+                st.success("Expense saved.")
+                st.rerun()
+    section("Employee expense register")
+    table(pd.DataFrame([{"Date": e.expense_date, "Employee": e.employee, "Category": e.category, "Amount": e.amount, "Status": e.status} for e in exp]),
+          ("Amount",), ("No expenses yet", "Record the first employee expense above.", "💸"))
+
+elif page == "Vendors & Customers":
+    t1, t2 = st.tabs(["🏢 Vendors", "🙋 Customers"])
     with t1:
         if can_post(user):
             with st.form("vendor_form"):
-                name=st.text_input("Vendor name"); gst=st.text_input("GSTIN"); email=st.text_input("Email")
-                add=st.form_submit_button("Add vendor")
-            if add:
-                if name.strip(): db.add(Vendor(name=name.strip(),gstin=gst or None,email=email or None)); db.commit(); st.success("Vendor saved."); st.rerun()
-        v=db.query(Vendor).all(); st.dataframe(pd.DataFrame([{"Name":x.name,"GSTIN":x.gstin,"Email":x.email,"Terms":x.payment_terms} for x in v]),use_container_width=True,hide_index=True)
+                c1, c2, c3 = st.columns(3)
+                name = c1.text_input("Vendor name")
+                gst = c2.text_input("GSTIN")
+                email = c3.text_input("Email")
+                add = st.form_submit_button("Add vendor")
+            if add and name.strip():
+                db.add(Vendor(name=name.strip(), gstin=gst or None, email=email or None))
+                db.commit()
+                st.success("Vendor saved.")
+                st.rerun()
+        section("Vendor directory")
+        table(pd.DataFrame([{"Name": x.name, "GSTIN": x.gstin, "Email": x.email, "Terms": x.payment_terms} for x in db.query(Vendor).all()]),
+              empty=("No vendors yet", "Add your first vendor above.", "🏢"))
     with t2:
         if can_post(user):
             with st.form("customer_form"):
-                name=st.text_input("Customer name"); gst=st.text_input("Customer GSTIN"); email=st.text_input("Customer email")
-                add=st.form_submit_button("Add customer")
-            if add:
-                if name.strip(): db.add(Customer(name=name.strip(),gstin=gst or None,email=email or None)); db.commit(); st.success("Customer saved."); st.rerun()
-        c=db.query(Customer).all(); st.dataframe(pd.DataFrame([{"Name":x.name,"GSTIN":x.gstin,"Email":x.email} for x in c]),use_container_width=True,hide_index=True)
-elif page=="Financial Statements":
-    st.subheader("Financial statements")
-    b=balances(db)
-    if not b: st.info("Statements will populate when journal entries are posted.")
+                c1, c2, c3 = st.columns(3)
+                name = c1.text_input("Customer name")
+                gst = c2.text_input("Customer GSTIN")
+                email = c3.text_input("Customer email")
+                add = st.form_submit_button("Add customer")
+            if add and name.strip():
+                db.add(Customer(name=name.strip(), gstin=gst or None, email=email or None))
+                db.commit()
+                st.success("Customer saved.")
+                st.rerun()
+        section("Customer directory")
+        table(pd.DataFrame([{"Name": x.name, "GSTIN": x.gstin, "Email": x.email} for x in db.query(Customer).all()]),
+              empty=("No customers yet", "Add your first customer above.", "🙋"))
+
+elif page == "Financial Statements":
+    b = balances(db)
+    if not b:
+        empty_state("Statements are waiting", "They will populate as soon as journal entries are posted.", "📊")
     else:
-        df=pd.DataFrame(b)
-        df["debit_balance"]=df.balance.clip(lower=0); df["credit_balance"]=(-df.balance).clip(lower=0)
-        st.markdown("**Trial balance**"); st.dataframe(df,use_container_width=True,hide_index=True)
-        revenue=sum(x["credit"]-x["debit"] for x in b if x["category"]=="Revenue")
-        expenses=sum(x["debit"]-x["credit"] for x in b if x["category"]=="Expense")
-        assets=sum(x["debit"]-x["credit"] for x in b if x["category"]=="Asset")
-        liabilities=sum(x["credit"]-x["debit"] for x in b if x["category"]=="Liability")
-        equity=sum(x["credit"]-x["debit"] for x in b if x["category"]=="Equity")+revenue-expenses
-        x,y,z=st.columns(3); x.metric("Revenue",money(revenue)); y.metric("Expenses",money(expenses)); z.metric("Net income",money(revenue-expenses))
-        st.markdown("**Balance sheet snapshot**")
-        a,c,e=st.columns(3); a.metric("Assets",money(assets)); c.metric("Liabilities",money(liabilities)); e.metric("Equity incl. current earnings",money(equity))
-        st.caption(f"Accounting equation variance: {money(assets-liabilities-equity)}")
-        st.download_button("Export trial balance",df.to_csv(index=False),"trial_balance.csv","text/csv")
-elif page=="Administration":
-    st.subheader("Workspace administration")
+        df = pd.DataFrame(b)
+        df["debit_balance"] = df.balance.clip(lower=0)
+        df["credit_balance"] = (-df.balance).clip(lower=0)
+        revenue = sum(x["credit"] - x["debit"] for x in b if x["category"] == "Revenue")
+        expenses = sum(x["debit"] - x["credit"] for x in b if x["category"] == "Expense")
+        assets = sum(x["debit"] - x["credit"] for x in b if x["category"] == "Asset")
+        liabilities = sum(x["credit"] - x["debit"] for x in b if x["category"] == "Liability")
+        equity = sum(x["credit"] - x["debit"] for x in b if x["category"] == "Equity") + revenue - expenses
+        section("Income snapshot")
+        kpi_grid([dict(label="Revenue", value=money(revenue), color="mint", icon="📈"),
+                  dict(label="Expenses", value=money(expenses), color="coral", icon="📉"),
+                  dict(label="Net income", value=money(revenue - expenses), color="yellow", icon="💰")], cols=3)
+        section("Balance sheet snapshot")
+        kpi_grid([dict(label="Assets", value=money(assets), color="sky", icon="🏛️"),
+                  dict(label="Liabilities", value=money(liabilities), color="pink", icon="📑"),
+                  dict(label="Equity incl. current earnings", value=money(equity), color="blue", icon="⚖️")], cols=3)
+        variance = round(assets - liabilities - equity, 2)
+        html_block(f'<div style="margin:-8px 0 8px">{pill("Balanced" if variance == 0 else "Out of balance", "ok" if variance == 0 else "bad")} '
+                   f'<span class="eyebrow" style="margin-left:8px">Accounting equation variance: {money(variance)}</span></div>')
+        section("Trial balance")
+        tb = df.rename(columns={"code": "Code", "account": "Account", "category": "Category", "debit": "Debit", "credit": "Credit",
+                                "balance": "Net balance", "debit_balance": "Debit balance", "credit_balance": "Credit balance"})
+        table(tb, ("Debit", "Credit", "Net balance", "Debit balance", "Credit balance"))
+        st.download_button("⬇ Export trial balance", tb.to_csv(index=False), "trial_balance.csv", "text/csv")
+
+elif page == "Administration":
     if can_admin(user):
-        st.markdown("**Create user account**")
+        section("Create user account")
         with st.form("user_create"):
-            name=st.text_input("Full name"); email=st.text_input("Work email"); pw=st.text_input("Temporary password",type="password"); role=st.selectbox("Role",["Controller","Accountant","Auditor","CFO"])
-            add=st.form_submit_button("Create account")
+            c1, c2 = st.columns(2)
+            name = c1.text_input("Full name")
+            email = c2.text_input("Work email")
+            pw = c1.text_input("Temporary password", type="password")
+            role = c2.selectbox("Role", ["Controller", "Accountant", "Auditor", "CFO"])
+            add = st.form_submit_button("Create account")
         if add:
             try:
-                if db.query(User).filter_by(email=email.lower().strip()).first(): st.error("Email already exists.")
-                else: db.add(User(full_name=name,email=email.lower().strip(),password_hash=hash_password(pw),role=role)); db.commit(); st.success("Account created.")
-            except Exception as ex: st.error(str(ex))
-        st.markdown("**User directory**")
-        us=db.query(User).all(); st.dataframe(pd.DataFrame([{"Name":u.full_name,"Email":u.email,"Role":u.role,"Active":u.is_active} for u in us]),use_container_width=True,hide_index=True)
-    else: st.warning("Only CFO users can administer accounts.")
-    st.markdown("**Accounting period controls**")
+                if db.query(User).filter_by(email=email.lower().strip()).first():
+                    st.error("Email already exists.")
+                else:
+                    db.add(User(full_name=name, email=email.lower().strip(), password_hash=hash_password(pw), role=role))
+                    db.commit()
+                    st.success("Account created.")
+            except Exception as ex:
+                st.error(str(ex))
+        section("User directory")
+        table(pd.DataFrame([{"Name": u.full_name, "Email": u.email, "Role": u.role, "Active": u.is_active} for u in db.query(User).all()]))
+    else:
+        st.warning("Only CFO users can administer accounts.")
+    section("Accounting period controls", "locked periods reject new postings")
     if can_lock(user):
-        period=st.text_input("Period (YYYY-MM)",value=date.today().strftime("%Y-%m"))
-        if st.button("Lock accounting period"):
-            if len(period)==7 and period[4]=="-":
-                if not db.query(PeriodLock).filter_by(period=period).first(): db.add(PeriodLock(period=period,locked_by=user.id)); db.commit()
+        c1, c2 = st.columns([2, 1], vertical_alignment="bottom")
+        period = c1.text_input("Period (YYYY-MM)", value=date.today().strftime("%Y-%m"))
+        if c2.button("🔒 Lock accounting period", width="stretch"):
+            if len(period) == 7 and period[4] == "-":
+                if not db.query(PeriodLock).filter_by(period=period).first():
+                    db.add(PeriodLock(period=period, locked_by=user.id))
+                    db.commit()
                 st.success(f"{period} is locked.")
-            else: st.error("Use YYYY-MM.")
-    locks=db.query(PeriodLock).all()
-    st.dataframe(pd.DataFrame([{"Period":x.period,"Locked at":x.locked_at,"Locked by":db.get(User,x.locked_by).full_name} for x in locks]),use_container_width=True,hide_index=True)
+            else:
+                st.error("Use YYYY-MM.")
+    people = {u.id: u.full_name for u in db.query(User).all()}
+    table(pd.DataFrame([{"Period": x.period, "Locked at": x.locked_at, "Locked by": people.get(x.locked_by, "Unknown")} for x in db.query(PeriodLock).all()]),
+          empty=("No locked periods", "Locked periods will be listed here.", "🔓"))
 
 db.close()

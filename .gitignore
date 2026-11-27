@@ -6,3 +6,4 @@ data/*.db
 uploads/*
 exports/*
 .DS_Store
+.pytest_cache/

@@ -39,7 +39,11 @@ SQLite is the default persistent relational database (`data/ledgerly.db`). SQLAl
 - Streamlit session state is used for the logged-in session. For internet-facing production deployment, place the app behind HTTPS, use a managed identity provider / hardened server-side session handling, CSRF protections, secrets management, backups and a security review. This is a local prototype, not a certified accounting system.
 
 ## UI
-Custom Ledgerly design system: warm ivory, charcoal ink, rose, butter yellow and mint; responsive Streamlit layout; branded favicon; animated MP4 opening scene on the login page. Respect reduced motion in the browser where supported.
+Neo-brutalist bento design system: thick ink outlines, hard offset shadows, flat pastel tiles (pink, butter yellow, mint, sky, coral) on warm cream, heavy Archivo headlines, tiles that pop in on load. Responsive down to phone width and respects `prefers-reduced-motion`.
+
+- `assets/theme.css` is the single stylesheet (design tokens at the top).
+- `app/ui.py` holds the reusable components (page header, KPI tiles, empty states, chart styling, login artwork).
+- `streamlit_app.py` contains page logic only.
 
 ## Demo data
 The bootstrap command seeds the chart of accounts, vendors, customers, bank transactions and employee expenses with synthetic examples. It does not seed real invoices or journal postings.
