@@ -336,3 +336,6 @@ section[data-testid="stSidebar"] label[data-testid="stRadioOption"] { padding: 8
 [data-testid="stDateInput"] div:has(> input) { border: 0 !important; background: transparent !important; box-shadow: none !important; }
 [data-testid="stDateInput"] div:has(> div > div > input) { background: var(--white) !important; border: var(--bw) solid var(--ink) !important; border-radius: var(--r-sm) !important; }
 @media (max-width: 800px) { .login-hero .sticker.s1 { display: none; } }
+.page-badge { font: 900 26px var(--display); letter-spacing: -.02em; }
+.feature .eyebrow { color: var(--ink); opacity: .7; }
+.feature { gap: 6px; }
